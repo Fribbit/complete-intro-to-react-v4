@@ -1,6 +1,6 @@
 import express from "express";
 import React from "react";
-import { renderToString } from "react-dom/server";
+import { renderToNodeStream } from "react-dom/server";
 import { ServerLocation } from "@reach/router";
 import fs from "fs";
 import App from "./src/App";
@@ -20,8 +20,15 @@ app.use((req, res) => {
     </ServerLocation>
   );
 
-  res.send(`${parts[0]}${renderToString(reactMarkup)}${parts[1]}`);
-  res.end();
+  const stream = renderToNodeStream(reactMarkup);
+  stream.pipe(
+    res,
+    { end: false }
+  );
+  stream.on("end", () => {
+    res.write(parts[1]);
+    res.end();
+  });
 });
 
 console.log(`listening on ${PORT}`);
